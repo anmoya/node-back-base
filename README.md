@@ -12,3 +12,4 @@ yarn add @types/body-parser @types/config @types/cors @types/express @types/node
 
 # Config the app
 Go to `./config/renamethisfiletodefault.ts`, then config port (node app will run in that port), a dbUri pointing to your mongo db, saltFactor for JWT.
+Finally, rename the file to `default.ts`
