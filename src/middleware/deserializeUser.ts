@@ -2,8 +2,9 @@ import { get } from "lodash";
 
 import { Request, Response, NextFunction } from "express";
 import { verifyJwt } from "../utils/jwt.utils";
+import { reIssueAccessToken } from "../service/session.service";
 
-export const deserializeUser = (
+export const deserializeUser = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -13,15 +14,33 @@ export const deserializeUser = (
     ""
   );
 
+  const refreshToken = get(req, "headers.x-refresh");
+
   if (!accessToken) return next();
 
   const { decoded, expired } = verifyJwt(accessToken);
 
-  console.log(decoded);
-
   if (decoded) {
     res.locals.user = decoded;
-    return next()
+    return next();
+  }
+
+  if (expired && refreshToken) {
+    const newAccessToken = await reIssueAccessToken({ refreshToken });
+
+    if (newAccessToken) {
+      res.setHeader("x-access-token", newAccessToken);
+    }
+
+    //! Que patrón en TS nos permite evitar esta wea de
+    // devolver un string | boolean
+    // probablemente reIssueAccessToken debe ser separada en una función que valide 
+    // y otra que devuelva el new Token
+    const result = verifyJwt(newAccessToken.toString());
+
+    res.locals.user = result.decoded;
+
+    return next();
   }
 
   return next();
